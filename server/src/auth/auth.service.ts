@@ -79,7 +79,6 @@ export class AuthService {
       secret: envVars.REFRESH_TOKEN_SECRET,
       expiresIn: envVars.REFRESH_TOKEN_EXPIRES_IN as any,
     });
-    console.log(data);
     return {
       user: {
         id: data.user.id,
