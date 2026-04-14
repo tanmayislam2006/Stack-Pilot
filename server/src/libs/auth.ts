@@ -1,14 +1,14 @@
-import { betterAuth } from 'better-auth';
-import { prismaAdapter } from 'better-auth/adapters/prisma';
-import { prisma } from './prisma';
-import { bearer } from 'better-auth/plugins';
-import { Role, UserStatus } from 'src/generated/prisma';
+import { betterAuth } from "better-auth";
+import { prismaAdapter } from "better-auth/adapters/prisma";
+import { prisma } from "./prisma";
+import { bearer } from "better-auth/plugins";
+import { Role, UserStatus } from "@prisma/client";
 
 // If your Prisma file is located elsewhere, you can change the path
 
 export const auth = betterAuth({
   database: prismaAdapter(prisma, {
-    provider: 'postgresql', // or "mysql", "postgresql", ...etc
+    provider: "postgresql", // or "mysql", "postgresql", ...etc
   }),
 
   emailAndPassword: {
@@ -19,25 +19,25 @@ export const auth = betterAuth({
   user: {
     additionalFields: {
       role: {
-        type: 'string',
+        type: "string",
         required: true,
         defaultValue: Role.USER,
       },
 
       status: {
-        type: 'string',
+        type: "string",
         required: true,
         defaultValue: UserStatus.ACTIVE,
       },
 
       isDeleted: {
-        type: 'boolean',
+        type: "boolean",
         required: true,
         defaultValue: false,
       },
 
       deletedAt: {
-        type: 'date',
+        type: "date",
         required: false,
         defaultValue: null,
       },
@@ -59,7 +59,7 @@ export const auth = betterAuth({
     },
   },
 
-  trustedOrigins: [process.env.BETTER_AUTH_URL || 'http://localhost:5000'],
+  trustedOrigins: [process.env.BETTER_AUTH_URL || "http://localhost:5000"],
 
   advanced: {
     // disableCSRFCheck: true,
@@ -67,18 +67,18 @@ export const auth = betterAuth({
     cookies: {
       state: {
         attributes: {
-          sameSite: 'none',
+          sameSite: "none",
           secure: true,
           httpOnly: true,
-          path: '/',
+          path: "/",
         },
       },
       sessionToken: {
         attributes: {
-          sameSite: 'none',
+          sameSite: "none",
           secure: true,
           httpOnly: true,
-          path: '/',
+          path: "/",
         },
       },
     },

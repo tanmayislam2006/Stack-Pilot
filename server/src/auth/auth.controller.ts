@@ -1,4 +1,3 @@
-/* eslint-disable prettier/prettier */
 import {
   Controller,
   Post,
@@ -9,71 +8,75 @@ import {
   UseGuards,
   Get,
   Req,
-} from '@nestjs/common';
-import { Response, Request } from 'express';
-import { AuthService } from './auth.service';
-import { LoginDto } from './dto/login.dto';
-import { RegisterDto } from './dto/register.dto';
-import { JwtAuthGuard } from './guards/jwt-auth.guard';
+} from "@nestjs/common";
+import { Response, Request } from "express";
+import { AuthService } from "./auth.service";
+import { LoginDto } from "./dto/login.dto";
+import { RegisterDto } from "./dto/register.dto";
+import { JwtAuthGuard } from "./guards/jwt-auth.guard";
 
-@Controller('auth')
+@Controller("auth")
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  @Post('register')
+  @Post("register")
   @HttpCode(HttpStatus.CREATED)
-  async register(
-    @Body() registerDto: RegisterDto,
-  ) {
+  async register(@Body() registerDto: RegisterDto) {
     const { user } = await this.authService.register(registerDto);
 
     return {
-      message: 'Registered successfully',
+      message: "Registered successfully",
       user,
     };
   }
 
-  @Post('login')
+  @Post("login")
   @HttpCode(HttpStatus.OK)
   async login(
     @Body() loginDto: LoginDto,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const { user, accessToken, refreshToken } =
+    const { user, accessToken, refreshToken, token } =
       await this.authService.login(loginDto);
 
     // Set Access Token Cookie
-    res.cookie('accessToken', accessToken, {
+    res.cookie("better-auth.session_token", token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 1000 * 60 * 60 * 24, // 1 day
+    });
+    res.cookie("accessToken", accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
       maxAge: 1000 * 60 * 60 * 24, // 1 day
     });
 
     // Set Refresh Token Cookie
-    res.cookie('refreshToken', refreshToken, {
+    res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
       maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
     });
 
     return {
-      message: 'Logged in successfully',
+      message: "Logged in successfully",
       user,
     };
   }
-  @Get('me')
+  @Get("me")
   @UseGuards(JwtAuthGuard)
   getProfile(@Req() req: Request) {
     return req.user;
   }
 
-  @Post('logout')
+  @Post("logout")
   @HttpCode(HttpStatus.OK)
   logout(@Res({ passthrough: true }) res: Response) {
-    res.clearCookie('accessToken');
-    res.clearCookie('refreshToken');
-    return { message: 'Logged out successfully' };
+    res.clearCookie("accessToken");
+    res.clearCookie("refreshToken");
+    return { message: "Logged out successfully" };
   }
 }
