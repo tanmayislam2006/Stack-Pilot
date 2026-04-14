@@ -151,7 +151,7 @@ Authentication is handled via **Better Auth**, while authorization is managed in
   "createdAt": "timestamp"
 }
 ```
-
+https://dbdiagram.io/d/STACL-PILOT-69de199980896296849199eb
 ---
 
 # 🚀 Deployment Flow
