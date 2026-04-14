@@ -1,12 +1,9 @@
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable prettier/prettier */
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { prisma } from "./prisma";
 import { bearer } from "better-auth/plugins";
 import { Role, UserStatus } from "src/generated/prisma";
-
 
 // If your Prisma file is located elsewhere, you can change the path
 
@@ -17,7 +14,7 @@ export const auth = betterAuth({
 
   emailAndPassword: {
     enabled: true,
-    requireEmailVerification: false
+    requireEmailVerification: false,
   },
 
   user: {
@@ -52,7 +49,7 @@ export const auth = betterAuth({
     sendOnSignIn: true,
     autoSignInAfterVerification: true,
   },
-  plugins:[bearer()],
+  plugins: [bearer()],
   session: {
     // better-auth expects seconds here (not milliseconds)
     expiresIn: 60 * 60 * 24 * 7, // 7 days
