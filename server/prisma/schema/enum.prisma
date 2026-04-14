@@ -1,0 +1,9 @@
+enum UserStatus {
+    ACTIVE
+    INACTIVE
+    BLOCKED
+}
+enum Role{
+    USER
+    ADMIN
+}
