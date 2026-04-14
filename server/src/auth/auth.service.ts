@@ -1,17 +1,16 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import {
   Injectable,
   UnauthorizedException,
   ForbiddenException,
-} from "@nestjs/common";
-import { JwtService } from "@nestjs/jwt";
-import { prisma } from "../libs/prisma";
-import { auth } from "../libs/auth";
-import { envVars } from "../config/env";
-import { LoginDto } from "./dto/login.dto";
-import { RegisterDto } from "./dto/register.dto";
-import { JwtPayload } from "./interfaces/jwt-payload.interface";
+} from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
+import { prisma } from '../libs/prisma';
+import { auth } from '../libs/auth';
+import { envVars } from '../config/env';
+import { LoginDto } from './dto/login.dto';
+import { RegisterDto } from './dto/register.dto';
+import { JwtPayload } from './interfaces/jwt-payload.interface';
 @Injectable()
 export class AuthService {
   constructor(private readonly jwtService: JwtService) {}
@@ -34,19 +33,19 @@ export class AuthService {
     });
 
     if (!existingUser) {
-      throw new UnauthorizedException("Invalid email or password.");
+      throw new UnauthorizedException('Invalid email or password.');
     }
 
     // Type definition fallback in case UserStatus enum doesn't map directly
-    if (existingUser.status === "BLOCKED") {
+    if (existingUser.status === 'BLOCKED') {
       throw new ForbiddenException(
-        "Your account is blocked. Please contact support for more information.",
+        'Your account is blocked. Please contact support for more information.',
       );
     }
 
-    if (existingUser.isDeleted || existingUser.status === "DELETED") {
+    if (existingUser.isDeleted || existingUser.status === 'DELETED') {
       throw new ForbiddenException(
-        "Your account is deleted. Please contact support for more information.",
+        'Your account is deleted. Please contact support for more information.',
       );
     }
 
@@ -60,10 +59,10 @@ export class AuthService {
       });
 
       if (!data || !data.user) {
-        throw new UnauthorizedException("Invalid email or password.");
+        throw new UnauthorizedException('Invalid email or password.');
       }
     } catch (error) {
-      throw new UnauthorizedException("Invalid email or password.");
+      throw new UnauthorizedException('Invalid email or password.');
     }
 
     const jwtPayload: JwtPayload = {
@@ -109,7 +108,7 @@ export class AuthService {
     });
 
     if (existingUser) {
-      throw new ForbiddenException("A user with this email already exists.");
+      throw new ForbiddenException('A user with this email already exists.');
     }
 
     try {
@@ -122,28 +121,8 @@ export class AuthService {
       });
 
       if (!data || !data.user) {
-        throw new ForbiddenException("Failed to create account.");
+        throw new ForbiddenException('Failed to create account.');
       }
-
-      const jwtPayload: JwtPayload = {
-        userId: data.user.id,
-        role: data.user.role as string,
-        name: data.user.name,
-        email: data.user.email,
-        status: data.user.status as string,
-        isDeleted: data.user.isDeleted as boolean,
-        emailVerified: data.user.emailVerified,
-      };
-
-      const accessToken = this.jwtService.sign(jwtPayload, {
-        secret: envVars.ACCESS_TOKEN_SECRET,
-        expiresIn: envVars.ACCESS_TOKEN_EXPIRES_IN as any,
-      });
-
-      const refreshToken = this.jwtService.sign(jwtPayload, {
-        secret: envVars.REFRESH_TOKEN_SECRET,
-        expiresIn: envVars.REFRESH_TOKEN_EXPIRES_IN as any,
-      });
 
       return {
         user: {
@@ -155,12 +134,10 @@ export class AuthService {
           isDeleted: data.user.isDeleted,
           emailVerified: data.user.emailVerified,
         },
-        accessToken,
-        refreshToken,
       };
     } catch (error: any) {
       throw new ForbiddenException(
-        error?.message || "Failed to register account.",
+        error?.message || 'Failed to register account.',
       );
     }
   }

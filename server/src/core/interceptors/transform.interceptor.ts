@@ -1,15 +1,13 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable prettier/prettier */
+
 import {
   Injectable,
   NestInterceptor,
   ExecutionContext,
   CallHandler,
-} from "@nestjs/common";
-import { Observable } from "rxjs";
-import { map } from "rxjs/operators";
+} from '@nestjs/common';
+import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 
 export interface Response<T> {
   statusCode: number;
@@ -40,14 +38,14 @@ export class TransformInterceptor<T> implements NestInterceptor<
     return next.handle().pipe(
       map((data: any) => {
         // If data is already carefully formatted or undefined, handle gracefully
-        const resMessage = data?.message || "Operation successful";
+        const resMessage = data?.message || 'Operation successful';
         const resMeta = data?.meta;
 
         // Extract data specifically if the controller wrapped it in a "data" property,
         // otherwise return the whole object, but exclude top-level custom keys if we manually mapped them
         let resData = data;
 
-        if (data && typeof data === "object") {
+        if (data && typeof data === 'object') {
           if (data.data !== undefined) {
             resData = data.data;
           } else {
