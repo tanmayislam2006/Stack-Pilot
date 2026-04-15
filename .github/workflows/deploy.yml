@@ -72,7 +72,7 @@ jobs:
             echo "Starting new container..."
             docker run -d \
               --name stackpilot-server \
-              -p 3000:3000 \
+              -p 5000:5000 \
               --env-file /app/server/.env \
               --restart unless-stopped \
               $IMAGE
