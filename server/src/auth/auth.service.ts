@@ -136,4 +136,55 @@ export class AuthService {
       );
     }
   }
+  async getMe(userId: string) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+    if (!user) {
+      throw new UnauthorizedException("User not found.");
+    }
+    return user;
+  }
+  async refreshTokens(userId: string) {
+    const existingUser = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!existingUser) {
+      throw new UnauthorizedException("User not found.");
+    }
+
+    if (
+      existingUser.status === "BLOCKED" ||
+      existingUser.isDeleted ||
+      existingUser.status === "DELETED"
+    ) {
+      throw new ForbiddenException("Your account is blocked or deleted.");
+    }
+
+    const jwtPayload: JwtPayload = {
+      userId: existingUser.id,
+      role: existingUser.role,
+      name: existingUser.name,
+      email: existingUser.email,
+      status: existingUser.status,
+      isDeleted: existingUser.isDeleted,
+      emailVerified: existingUser.emailVerified,
+    };
+
+    const accessToken = this.jwtService.sign(jwtPayload, {
+      secret: envVars.ACCESS_TOKEN_SECRET,
+      expiresIn: envVars.ACCESS_TOKEN_EXPIRES_IN as any,
+    });
+
+    const refreshToken = this.jwtService.sign(jwtPayload, {
+      secret: envVars.REFRESH_TOKEN_SECRET,
+      expiresIn: envVars.REFRESH_TOKEN_EXPIRES_IN as any,
+    });
+
+    return {
+      accessToken,
+      refreshToken,
+    };
+  }
 }

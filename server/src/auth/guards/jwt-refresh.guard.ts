@@ -4,8 +4,9 @@ import {
   UnauthorizedException,
 } from "@nestjs/common";
 import { AuthGuard } from "@nestjs/passport";
+
 @Injectable()
-export class JwtAuthGuard extends AuthGuard("jwt") {
+export class JwtRefreshGuard extends AuthGuard("jwt-refresh") {
   canActivate(context: ExecutionContext) {
     return super.canActivate(context);
   }
@@ -16,7 +17,7 @@ export class JwtAuthGuard extends AuthGuard("jwt") {
       throw (
         err ||
         new UnauthorizedException(
-          "Please authenticate to access this resource.",
+          "Invalid or expired refresh token. Please login again.",
         )
       );
     }
