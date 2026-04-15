@@ -1,0 +1,80 @@
+name: Deploy API to  VPS
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  build-and-push-image:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Create lower case repository name for Docker tagging
+      - name: Set lower case repository name
+        run: echo "IMAGE_NAME=$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./server
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          labels: ${{ steps.meta.outputs.labels }}
+
+  deploy:
+    needs: build-and-push-image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Execute SSH deployment commands
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USERNAME }}
+          password: ${{ secrets.SERVER_PASSWORD }}
+          script: |
+            # Format the image name correctly
+            IMAGE="ghcr.io/$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]'):latest"
+            
+            # Since repo is public, we can pull directly without logging in!
+            echo "Pulling $IMAGE..."
+            docker pull $IMAGE
+            
+            # Stop existing container safely without crashing if it doesn't exist yet
+            echo "Stopping old container..."
+            docker stop stackpilot-server || true
+            docker rm stackpilot-server || true
+            
+            # Run the new container mapping port 3000 to the container
+            # It loads secrets from /app/server/.env directly on your cloud VPS
+            echo "Starting new container..."
+            docker run -d \
+              --name stackpilot-server \
+              -p 3000:3000 \
+              --env-file /app/server/.env \
+              --restart unless-stopped \
+              $IMAGE
+              
+            echo "Deployment successful!"
