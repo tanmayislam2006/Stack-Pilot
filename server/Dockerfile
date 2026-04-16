@@ -7,9 +7,10 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install
 
-# Copy prisma schema and generate client before copying the rest of the source
-# This allows for better layer caching when source code changes
+# Copy prisma schema and config before generating client
+# This allows for better layer caching and fixes multi-file schema resolution
 COPY prisma ./prisma/
+COPY prisma.config.ts ./
 RUN npx prisma generate
 
 # Copy source code and build
@@ -23,6 +24,7 @@ WORKDIR /app
 
 # Copy required files from the builder
 COPY package*.json ./
+COPY prisma.config.ts ./
 COPY prisma ./prisma/
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
