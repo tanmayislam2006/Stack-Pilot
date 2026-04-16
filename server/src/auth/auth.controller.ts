@@ -77,7 +77,10 @@ export class AuthController {
 
   @Post("logout")
   @HttpCode(HttpStatus.OK)
-  logout(@Res({ passthrough: true }) res: Response) {
+  async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
+    const refreshToken = req.cookies["refreshToken"];
+    await this.authService.logout(refreshToken);
+
     res.clearCookie("accessToken");
     res.clearCookie("refreshToken");
     // BetterAuth session token cleanup if the client set it natively
@@ -91,9 +94,10 @@ export class AuthController {
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const user = req.user as JwtPayload;
+    const user = req.user as JwtPayload & { refreshToken: string };
     const { accessToken, refreshToken } = await this.authService.refreshTokens(
       user.userId,
+      user.refreshToken,
     );
 
     res.cookie("accessToken", accessToken, {

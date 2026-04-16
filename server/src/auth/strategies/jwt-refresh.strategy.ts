@@ -15,18 +15,16 @@ export class JwtRefreshStrategy extends PassportStrategy(
       jwtFromRequest: ExtractJwt.fromExtractors([
         (request: Request) => {
           const data = request?.cookies["refreshToken"];
-          if (!data) {
-            return null;
-          }
-          return data;
+          return data || null;
         },
       ]),
       ignoreExpiration: false,
       secretOrKey: envVars.REFRESH_TOKEN_SECRET,
+      passReqToCallback: true,
     });
   }
 
-  validate(payload: JwtPayload) {
+  validate(req: Request, payload: JwtPayload) {
     if (
       payload.isDeleted ||
       payload.status === "BLOCKED" ||
@@ -34,6 +32,8 @@ export class JwtRefreshStrategy extends PassportStrategy(
     ) {
       throw new UnauthorizedException("Your account is blocked or deleted.");
     }
-    return payload;
+
+    const refreshToken = req.cookies["refreshToken"];
+    return { ...payload, refreshToken };
   }
 }

@@ -79,6 +79,16 @@ export class AuthService {
       secret: envVars.REFRESH_TOKEN_SECRET,
       expiresIn: envVars.REFRESH_TOKEN_EXPIRES_IN as any,
     });
+
+    // Store refresh token in database
+    await prisma.refreshToken.create({
+      data: {
+        token: refreshToken,
+        userId: existingUser.id,
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Default 7d, should ideally parse from env
+      },
+    });
+
     return {
       user: {
         id: data.user.id,
@@ -145,7 +155,7 @@ export class AuthService {
     }
     return user;
   }
-  async refreshTokens(userId: string) {
+  async refreshTokens(userId: string, currentRefreshToken: string) {
     const existingUser = await prisma.user.findUnique({
       where: { id: userId },
     });
@@ -161,6 +171,24 @@ export class AuthService {
     ) {
       throw new ForbiddenException("Your account is blocked or deleted.");
     }
+
+    // Verify if the refresh token exists in the database
+    const storedToken = await prisma.refreshToken.findUnique({
+      where: { token: currentRefreshToken },
+    });
+
+    if (!storedToken) {
+      // Possible token reuse attack! Revoke all tokens for this user for safety
+      await prisma.refreshToken.deleteMany({ where: { userId } });
+      throw new UnauthorizedException(
+        "Invalid refresh token. Security alert: token may have been reused.",
+      );
+    }
+
+    // Rotate token: delete the old one
+    await prisma.refreshToken.delete({
+      where: { id: storedToken.id },
+    });
 
     const jwtPayload: JwtPayload = {
       userId: existingUser.id,
@@ -182,9 +210,27 @@ export class AuthService {
       expiresIn: envVars.REFRESH_TOKEN_EXPIRES_IN as any,
     });
 
+    // Store the new refresh token
+    await prisma.refreshToken.create({
+      data: {
+        token: refreshToken,
+        userId: existingUser.id,
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      },
+    });
+
     return {
       accessToken,
       refreshToken,
     };
+  }
+
+  async logout(refreshToken: string) {
+    if (refreshToken) {
+      await prisma.refreshToken.deleteMany({
+        where: { token: refreshToken },
+      });
+    }
+    return { message: "Logged out successfully" };
   }
 }

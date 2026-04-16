@@ -1,10 +1,10 @@
 /* eslint-disable @typescript-eslint/no-floating-promises */
 import { NestFactory } from "@nestjs/core";
+import { Logger, ValidationPipe } from "@nestjs/common";
 import cookieParser from "cookie-parser";
 
 import { envVars } from "./config/env";
 import { AppModule } from "./app.module";
-import { Logger } from "@nestjs/common";
 import { TransformInterceptor } from "./core/interceptors/transform.interceptor";
 import { prisma } from "./libs/prisma";
 
@@ -13,6 +13,14 @@ async function bootstrap() {
   const logger = new Logger("Start");
 
   app.use(cookieParser());
+
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+    }),
+  );
 
   app.useGlobalInterceptors(new TransformInterceptor());
   await prisma.$connect();
