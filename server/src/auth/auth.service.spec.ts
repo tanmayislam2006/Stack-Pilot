@@ -11,6 +11,9 @@ jest.mock("../libs/prisma", () => ({
     user: {
       findUnique: jest.fn(),
     },
+    refreshToken: {
+      create: jest.fn(),
+    },
   },
 }));
 

@@ -9,7 +9,29 @@ env:
   REGISTRY: ghcr.io
 
 jobs:
+  test-application:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: './server/package-lock.json'
+
+      - name: Install Dependencies
+        run: npm ci
+        working-directory: ./server
+
+      - name: Run Tests
+        run: npm run test
+        working-directory: ./server
+
   build-and-push-image:
+    needs: test-application
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -44,6 +66,7 @@ jobs:
           tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
           labels: ${{ steps.meta.outputs.labels }}
 
+  # TODO: VPS is currently unavailable. Implement this deployment phase later.
   # deploy:
   #   needs: build-and-push-image
   #   runs-on: ubuntu-latest
