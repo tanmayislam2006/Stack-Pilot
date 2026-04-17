@@ -85,7 +85,9 @@ describe("AuthService", () => {
     it("should throw UnauthorizedException if user is not found", async () => {
       (prisma.user.findUnique as jest.Mock).mockResolvedValue(null);
 
-      await expect(service.login(loginDto)).rejects.toThrow(UnauthorizedException);
+      await expect(service.login(loginDto)).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
 
     it("should throw ForbiddenException if user is blocked", async () => {
@@ -108,10 +110,10 @@ describe("AuthService", () => {
   });
 
   describe("register", () => {
-    const registerDto = { 
-      email: "new@example.com", 
-      password: "password123", 
-      name: "New User" 
+    const registerDto = {
+      email: "new@example.com",
+      password: "password123",
+      name: "New User",
     };
 
     it("should successfully register a new user", async () => {
@@ -129,7 +131,9 @@ describe("AuthService", () => {
     it("should throw ForbiddenException if email already exists", async () => {
       (prisma.user.findUnique as jest.Mock).mockResolvedValue(mockUser);
 
-      await expect(service.register(registerDto)).rejects.toThrow(ForbiddenException);
+      await expect(service.register(registerDto)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
   });
 });

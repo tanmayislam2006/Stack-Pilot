@@ -7,9 +7,17 @@ enum Role{
     USER
     ADMIN
 }
-enum ServiceStatus{
+    enum ServiceStatus {
     IDLE
+    BUILDING
     RUNNING
     STOPPED
     ERROR
+    }
+
+    enum DeployStatus {
+    PENDING
+    IN_PROGRESS
+    SUCCESS
+    FAILED
 }

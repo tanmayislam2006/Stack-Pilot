@@ -2,14 +2,37 @@ model Service {
   id          String   @id @default(uuid())
   name        String
   repoUrl     String
-  price       Float
-  status      ServiceStatus @default(RUNNING)
-  contianerId String
-  port        Int
+  price       Float    @default(0)
+  status      ServiceStatus @default(IDLE)
+  containerId String?
+  port        Int?
+  
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  deployments Deployment[]
+  
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  @@map("services")
+  @@index([name])
+  @@index([status])
+  @@index([port])
 }
-@@map("services")
-@@index([name])
-@@index([status])
-@@index([port])
+
+model Deployment {
+  id        String   @id @default(uuid())
+  status    DeployStatus @default(PENDING)
+  logs      String?  @db.Text
+  
+  serviceId String
+  service   Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("deployments")
+  @@index([serviceId])
+  @@index([status])
+}
