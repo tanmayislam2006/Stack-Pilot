@@ -14,7 +14,18 @@ export class DockerService {
     buildContextDir: string,
   ): Promise<string> {
     const imageName = `stackpilot-service-${serviceId}`;
-    await execAsync(`docker build -t ${imageName} .`, { cwd: buildContextDir });
+    try {
+      // Use Nixpacks for Zero-Config builds (auto-detects NodeJS, Python, Go, Rust, or default Dockerfiles)
+      // Increased maxBuffer to 50MB since compiler logs can overflow the standard node buffer
+      await execAsync(`npx --yes nixpacks build . --name ${imageName}`, {
+        cwd: buildContextDir,
+        maxBuffer: 1024 * 1024 * 50, // 50 MB
+      });
+    } catch (e) {
+      throw new Error(
+        `Nixpacks Build Engine Failed: ${e instanceof Error ? e.message : String(e)}`,
+      );
+    }
     return imageName;
   }
 
