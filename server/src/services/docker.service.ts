@@ -35,6 +35,8 @@ export class DockerService {
     hostPort: number,
     internalPort: number = 5000,
     envVars: Record<string, string> = {},
+    memoryLimit: string = "512m",
+    cpuLimit: number = 0.5,
   ): Promise<string> {
     const containerName = `stackpilot-container-${serviceId}`;
 
@@ -49,7 +51,7 @@ export class DockerService {
     }
 
     const { stdout } = await execAsync(
-      `docker run -d --name ${containerName} -p ${hostPort}:${internalPort} ${envString.trim()} ${imageName}`,
+      `docker run -d --memory="${memoryLimit}" --cpus="${cpuLimit}" --name ${containerName} -p ${hostPort}:${internalPort} ${envString.trim()} ${imageName}`,
     );
 
     return stdout.trim();
@@ -60,6 +62,8 @@ export class DockerService {
     imageName: string,
     internalPort: number = 5000,
     envVars: Record<string, string> = {},
+    memoryLimit: string = "512m",
+    cpuLimit: number = 0.5,
   ): Promise<boolean> {
     const testContainer = `stackpilot-test-${serviceId}`;
     try {
@@ -72,7 +76,7 @@ export class DockerService {
 
       // Boot generic isolated container without ANY public port mapping
       await execAsync(
-        `docker run -d --name ${testContainer} ${envString.trim()} ${imageName}`,
+        `docker run -d --memory="${memoryLimit}" --cpus="${cpuLimit}" --name ${testContainer} ${envString.trim()} ${imageName}`,
       );
 
       // Give the framework 5 full seconds to boot completely (avoids syntax crashes/failed DB bindings)

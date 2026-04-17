@@ -9,6 +9,8 @@ model Service {
   
   internalPort Int     @default(5000)
   branch       String  @default("main")
+  memoryLimit  String  @default("512m")
+  cpuLimit     Float   @default(0.5)
 
   userId      String
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)

@@ -29,6 +29,14 @@ export class CreateServiceDto {
   branch?: string;
 
   @IsOptional()
+  @IsString()
+  memoryLimit?: string;
+
+  @IsOptional()
+  @IsNumber()
+  cpuLimit?: number;
+
+  @IsOptional()
   @IsObject()
   envVars?: Record<string, string>;
 }

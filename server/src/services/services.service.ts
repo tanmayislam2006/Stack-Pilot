@@ -205,6 +205,8 @@ export class ServicesService {
         imageName,
         serviceData?.internalPort,
         envRecord,
+        serviceData?.memoryLimit,
+        serviceData?.cpuLimit,
       );
 
       if (!isHealthy) {
@@ -224,6 +226,8 @@ export class ServicesService {
         port,
         serviceData?.internalPort,
         envRecord,
+        serviceData?.memoryLimit,
+        serviceData?.cpuLimit,
       );
       await appendLog(
         `Container started successfully with ID: ${containerId.substring(0, 12)}.`,
