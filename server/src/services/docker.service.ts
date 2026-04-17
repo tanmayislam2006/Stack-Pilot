@@ -1,0 +1,61 @@
+/* eslint-disable no-empty */
+/* eslint-disable @typescript-eslint/no-unused-vars */
+
+import { Injectable } from "@nestjs/common";
+import { exec } from "child_process";
+import { promisify } from "util";
+
+const execAsync = promisify(exec);
+
+@Injectable()
+export class DockerService {
+  async buildImage(
+    serviceId: string,
+    buildContextDir: string,
+  ): Promise<string> {
+    const imageName = `stackpilot-service-${serviceId}`;
+    await execAsync(`docker build -t ${imageName} .`, { cwd: buildContextDir });
+    return imageName;
+  }
+
+  async runContainer(
+    serviceId: string,
+    imageName: string,
+    hostPort: number,
+  ): Promise<string> {
+    const containerName = `stackpilot-container-${serviceId}`;
+
+    // Remove if exists
+    try {
+      await execAsync(`docker rm -f ${containerName}`);
+    } catch (e) {
+      // Ignore if container does not exist
+    }
+
+    // Default container port that many node frameworks use is 3000
+    // Using -e PORT=3000 allows apps that read from Env port to use 3000
+    const { stdout } = await execAsync(
+      `docker run -d --name ${containerName} -p ${hostPort}:3000 -e PORT=3000 ${imageName}`,
+    );
+
+    return stdout.trim(); // Returns container ID
+  }
+
+  async stopContainer(serviceId: string) {
+    const containerName = `stackpilot-container-${serviceId}`;
+    try {
+      await execAsync(`docker stop ${containerName}`);
+    } catch (e) {}
+  }
+
+  async getLogs(containerId: string): Promise<string> {
+    try {
+      const { stdout, stderr } = await execAsync(
+        `docker logs --tail 100 ${containerId}`,
+      );
+      return stdout + stderr;
+    } catch (e) {
+      return "Log reading failed.";
+    }
+  }
+}

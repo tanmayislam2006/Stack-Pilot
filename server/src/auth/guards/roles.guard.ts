@@ -1,5 +1,9 @@
-/* eslint-disable prettier/prettier */
-import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from "@nestjs/common";
+import {
+  Injectable,
+  CanActivate,
+  ExecutionContext,
+  ForbiddenException,
+} from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
 import { Role } from "@prisma/client";
 import { ROLES_KEY } from "../decorators/roles.decorator";
@@ -26,7 +30,9 @@ export class RolesGuard implements CanActivate {
 
     // Check if the user's role is in the list of required roles
     if (!requiredRoles.includes(user.role)) {
-     throw new ForbiddenException("Forbidden: You don't have permission to access this resource");
+      throw new ForbiddenException(
+        "Forbidden: You don't have permission to access this resource",
+      );
     }
 
     return true;

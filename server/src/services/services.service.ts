@@ -1,9 +1,18 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { prisma } from "../libs/prisma";
 import { CreateServiceDto } from "./dto/create-service.dto";
+import { GitService } from "./git.service";
+import { DockerService } from "./docker.service";
+import { PortService } from "./port.service";
 
 @Injectable()
 export class ServicesService {
+  constructor(
+    private readonly gitService: GitService,
+    private readonly dockerService: DockerService,
+    private readonly portService: PortService,
+  ) {}
+
   async create(userId: string, createServiceDto: CreateServiceDto) {
     const service = await prisma.service.create({
       data: {
@@ -58,6 +67,11 @@ export class ServicesService {
       throw new NotFoundException(`Service with id ${id} not found`);
     }
 
+    // Stop and remove docker container if it exists
+    if (service.containerId) {
+      await this.dockerService.stopContainer(id);
+    }
+
     await prisma.service.delete({
       where: { id },
     });
@@ -91,10 +105,96 @@ export class ServicesService {
       data: { status: "BUILDING" },
     });
 
+    // Run the deployment logic in the background so request can return immediately
+    this.runDeployment(service.id, deployment.id, service.repoUrl).catch(
+      console.error,
+    );
+
     return {
       message: "Deployment triggered successfully",
       data: deployment,
     };
+  }
+
+  private async runDeployment(
+    serviceId: string,
+    deploymentId: string,
+    repoUrl: string,
+  ) {
+    let logs = "Starting deployment...\n";
+    const appendLog = async (msg: string) => {
+      logs += `${new Date().toISOString()} - ${msg}\n`;
+      await prisma.deployment.update({
+        where: { id: deploymentId },
+        data: { logs },
+      });
+    };
+
+    try {
+      await prisma.deployment.update({
+        where: { id: deploymentId },
+        data: { status: "IN_PROGRESS" },
+      });
+
+      // 1. Allocate Port
+      await appendLog("Allocating port...");
+      const serviceData = await prisma.service.findUnique({
+        where: { id: serviceId },
+      });
+      let port = serviceData?.port;
+      if (!port) {
+        port = await this.portService.allocatePort();
+        await prisma.service.update({
+          where: { id: serviceId },
+          data: { port },
+        });
+      }
+      await appendLog(`Assigned port ${port}.`);
+
+      // 2. Clone Repo
+      await appendLog("Cloning repository...");
+      const targetDir = await this.gitService.cloneRepo(repoUrl, serviceId);
+      await appendLog(`Cloned repository to workspace.`);
+
+      // 3. Build Docker Image
+      await appendLog("Building Docker image...");
+      const imageName = await this.dockerService.buildImage(
+        serviceId,
+        targetDir,
+      );
+      await appendLog(`Built Docker image: ${imageName}.`);
+
+      // 4. Run Container
+      await appendLog("Starting container...");
+      const containerId = await this.dockerService.runContainer(
+        serviceId,
+        imageName,
+        port,
+      );
+      await appendLog(
+        `Container started successfully with ID: ${containerId.substring(0, 12)}.`,
+      );
+
+      // Success Update
+      await prisma.service.update({
+        where: { id: serviceId },
+        data: { status: "RUNNING", containerId },
+      });
+      await prisma.deployment.update({
+        where: { id: deploymentId },
+        data: { status: "SUCCESS" },
+      });
+    } catch (error: any) {
+      await appendLog(`ERROR: ${error.message}`);
+      await prisma.service.update({
+        where: { id: serviceId },
+        data: { status: "ERROR" },
+      });
+      await prisma.deployment.update({
+        where: { id: deploymentId },
+        data: { status: "FAILED" },
+      });
+    }
   }
 
   async getDeployments(userId: string, serviceId: string) {
