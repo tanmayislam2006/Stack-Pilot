@@ -187,10 +187,7 @@ export class ServicesService {
       );
       await appendLog(`Built Docker image: ${imageName}.`);
 
-      // 4. Run Container
-      await appendLog(
-        "Preparing environment variables and starting container...",
-      );
+      // Database Env Vars lookup
       const envVars = await prisma.environmentVariable.findMany({
         where: { serviceId },
       });
@@ -198,6 +195,28 @@ export class ServicesService {
         (acc, curr) => ({ ...acc, [curr.key]: curr.value }),
         {},
       );
+
+      // 4. Health Check Security Ping
+      await appendLog(
+        "Booting isolated test container for generic framework health checks...",
+      );
+      const isHealthy = await this.dockerService.healthCheckImage(
+        serviceId,
+        imageName,
+        serviceData?.internalPort,
+        envRecord,
+      );
+
+      if (!isHealthy) {
+        throw new Error(
+          "Application crashed on startup during internal health checks. Deployment stopped immediately. Your live site was NOT taken offline.",
+        );
+      }
+      await appendLog(
+        "Health check completely passed! Safely routing network traffic to new container...",
+      );
+
+      // 5. Run Live Container
 
       const containerId = await this.dockerService.runContainer(
         serviceId,

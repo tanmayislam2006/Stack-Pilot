@@ -38,23 +38,57 @@ export class DockerService {
   ): Promise<string> {
     const containerName = `stackpilot-container-${serviceId}`;
 
-    // Remove if exists
+    // Gracefully stop the old container first to free the host port
     try {
       await execAsync(`docker rm -f ${containerName}`);
-    } catch (e) {
-      // Ignore if container does not exist
-    }
+    } catch (e) {}
 
     let envString = `-e PORT=${internalPort} `;
     for (const [key, value] of Object.entries(envVars)) {
-      envString += `-e ${key}=${value} `;
+      envString += `-e ${key}="${value}" `;
     }
 
     const { stdout } = await execAsync(
       `docker run -d --name ${containerName} -p ${hostPort}:${internalPort} ${envString.trim()} ${imageName}`,
     );
 
-    return stdout.trim(); // Returns container ID
+    return stdout.trim();
+  }
+
+  async healthCheckImage(
+    serviceId: string,
+    imageName: string,
+    internalPort: number = 5000,
+    envVars: Record<string, string> = {},
+  ): Promise<boolean> {
+    const testContainer = `stackpilot-test-${serviceId}`;
+    try {
+      await execAsync(`docker rm -f ${testContainer}`).catch(() => {});
+
+      let envString = `-e PORT=${internalPort} `;
+      for (const [key, value] of Object.entries(envVars)) {
+        envString += `-e ${key}="${value}" `;
+      }
+
+      // Boot generic isolated container without ANY public port mapping
+      await execAsync(
+        `docker run -d --name ${testContainer} ${envString.trim()} ${imageName}`,
+      );
+
+      // Give the framework 5 full seconds to boot completely (avoids syntax crashes/failed DB bindings)
+      await new Promise((resolve) => setTimeout(resolve, 5000));
+
+      const { stdout } = await execAsync(
+        `docker inspect -f '{{.State.Running}}' ${testContainer}`,
+      );
+
+      return stdout.trim() === "true";
+    } catch {
+      return false;
+    } finally {
+      // Always cleanup the ghost test container to restore server memory
+      await execAsync(`docker rm -f ${testContainer}`).catch(() => {});
+    }
   }
 
   async stopContainer(serviceId: string) {
