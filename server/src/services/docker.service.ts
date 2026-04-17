@@ -22,6 +22,8 @@ export class DockerService {
     serviceId: string,
     imageName: string,
     hostPort: number,
+    internalPort: number = 5000,
+    envVars: Record<string, string> = {},
   ): Promise<string> {
     const containerName = `stackpilot-container-${serviceId}`;
 
@@ -32,10 +34,13 @@ export class DockerService {
       // Ignore if container does not exist
     }
 
-    // Default container port that many node frameworks use is 3000
-    // Using -e PORT=3000 allows apps that read from Env port to use 3000
+    let envString = `-e PORT=${internalPort} `;
+    for (const [key, value] of Object.entries(envVars)) {
+      envString += `-e ${key}=${value} `;
+    }
+
     const { stdout } = await execAsync(
-      `docker run -d --name ${containerName} -p ${hostPort}:3000 -e PORT=3000 ${imageName}`,
+      `docker run -d --name ${containerName} -p ${hostPort}:${internalPort} ${envString.trim()} ${imageName}`,
     );
 
     return stdout.trim(); // Returns container ID

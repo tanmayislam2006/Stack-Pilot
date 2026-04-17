@@ -23,12 +23,16 @@ export class GitService {
     }
   }
 
-  async cloneRepo(repoUrl: string, serviceId: string): Promise<string> {
+  async cloneRepo(
+    repoUrl: string,
+    serviceId: string,
+    branch: string = "main",
+  ): Promise<string> {
     const targetDir = path.join(this.workspaceDir, serviceId);
     // Clean up if it exists
     await fs.rm(targetDir, { recursive: true, force: true }).catch(() => {});
     // Clone repository
-    await execAsync(`git clone ${repoUrl} ${targetDir}`);
+    await execAsync(`git clone -b ${branch} ${repoUrl} ${targetDir}`);
     return targetDir;
   }
 }

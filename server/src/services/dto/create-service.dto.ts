@@ -1,4 +1,11 @@
-import { IsString, IsUrl, IsOptional, IsNumber, Min } from "class-validator";
+import {
+  IsString,
+  IsUrl,
+  IsOptional,
+  IsNumber,
+  Min,
+  IsObject,
+} from "class-validator";
 
 export class CreateServiceDto {
   @IsString()
@@ -11,4 +18,17 @@ export class CreateServiceDto {
   @IsNumber()
   @Min(0)
   price?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  internalPort?: number;
+
+  @IsOptional()
+  @IsString()
+  branch?: string;
+
+  @IsOptional()
+  @IsObject()
+  envVars?: Record<string, string>;
 }

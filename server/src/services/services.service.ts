@@ -14,11 +14,25 @@ export class ServicesService {
   ) {}
 
   async create(userId: string, createServiceDto: CreateServiceDto) {
+    const { envVars, ...serviceData } = createServiceDto;
+
+    const queryData: any = {
+      ...serviceData,
+      userId,
+    };
+
+    if (envVars && Object.keys(envVars).length > 0) {
+      queryData.environmentVariables = {
+        create: Object.entries(envVars).map(([key, value]) => ({
+          key,
+          value,
+        })),
+      };
+    }
+
     const service = await prisma.service.create({
-      data: {
-        ...createServiceDto,
-        userId,
-      },
+      data: queryData,
+      include: { environmentVariables: true },
     });
     return {
       message: "Service created successfully",
@@ -45,6 +59,7 @@ export class ServicesService {
           orderBy: { createdAt: "desc" },
           take: 5,
         },
+        environmentVariables: true,
       },
     });
 
@@ -152,8 +167,12 @@ export class ServicesService {
       await appendLog(`Assigned port ${port}.`);
 
       // 2. Clone Repo
-      await appendLog("Cloning repository...");
-      const targetDir = await this.gitService.cloneRepo(repoUrl, serviceId);
+      await appendLog(`Cloning repository (branch: ${serviceData?.branch})...`);
+      const targetDir = await this.gitService.cloneRepo(
+        repoUrl,
+        serviceId,
+        serviceData?.branch,
+      );
       await appendLog(`Cloned repository to workspace.`);
 
       // 3. Build Docker Image
@@ -165,11 +184,23 @@ export class ServicesService {
       await appendLog(`Built Docker image: ${imageName}.`);
 
       // 4. Run Container
-      await appendLog("Starting container...");
+      await appendLog(
+        "Preparing environment variables and starting container...",
+      );
+      const envVars = await prisma.environmentVariable.findMany({
+        where: { serviceId },
+      });
+      const envRecord = envVars.reduce(
+        (acc, curr) => ({ ...acc, [curr.key]: curr.value }),
+        {},
+      );
+
       const containerId = await this.dockerService.runContainer(
         serviceId,
         imageName,
         port,
+        serviceData?.internalPort,
+        envRecord,
       );
       await appendLog(
         `Container started successfully with ID: ${containerId.substring(0, 12)}.`,
