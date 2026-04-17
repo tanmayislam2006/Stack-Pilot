@@ -4,6 +4,7 @@ import { CreateServiceDto } from "./dto/create-service.dto";
 import { GitService } from "./git.service";
 import { DockerService } from "./docker.service";
 import { PortService } from "./port.service";
+import { LogsGateway } from "./logs.gateway";
 
 @Injectable()
 export class ServicesService {
@@ -11,6 +12,7 @@ export class ServicesService {
     private readonly gitService: GitService,
     private readonly dockerService: DockerService,
     private readonly portService: PortService,
+    private readonly logsGateway: LogsGateway,
   ) {}
 
   async create(userId: string, createServiceDto: CreateServiceDto) {
@@ -143,6 +145,8 @@ export class ServicesService {
         where: { id: deploymentId },
         data: { logs },
       });
+      // Stream real-time logs via WebSocket to connected frontend clients
+      this.logsGateway.broadcastLog(deploymentId, msg);
     };
 
     try {
