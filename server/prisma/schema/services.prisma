@@ -1,0 +1,15 @@
+model Service {
+  id          String   @id @default(uuid())
+  name        String
+  repoUrl     String
+  price       Float
+  status      ServiceStatus @default(RUNNING)
+  contianerId String
+  port        Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+@@map("services")
+@@index([name])
+@@index([status])
+@@index([port])

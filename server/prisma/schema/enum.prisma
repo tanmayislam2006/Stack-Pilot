@@ -7,3 +7,9 @@ enum Role{
     USER
     ADMIN
 }
+enum ServiceStatus{
+    IDLE
+    RUNNING
+    STOPPED
+    ERROR
+}
