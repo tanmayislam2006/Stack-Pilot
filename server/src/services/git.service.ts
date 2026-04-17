@@ -35,4 +35,8 @@ export class GitService {
     await execAsync(`git clone -b ${branch} ${repoUrl} ${targetDir}`);
     return targetDir;
   }
+  async cleanup(serviceId: string): Promise<void> {
+    const targetDir = path.join(this.workspaceDir, serviceId);
+    await fs.rm(targetDir, { recursive: true, force: true }).catch(() => {});
+  }
 }

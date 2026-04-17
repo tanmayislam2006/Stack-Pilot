@@ -225,6 +225,10 @@ export class ServicesService {
         where: { id: deploymentId },
         data: { status: "FAILED" },
       });
+    } finally {
+      await appendLog("Cleaning up workspace...");
+      await this.gitService.cleanup(serviceId);
+      await appendLog("Cleanup complete. Deployment process finished.");
     }
   }
 
